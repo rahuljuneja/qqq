@@ -162,6 +162,7 @@
         </div>
 
         <p class="scenario" id="scenario">Loading scenario...</p>
+        <p class="timestamp" id="change">Change: --</p>
 
         <div class="action-box">
           <div class="action-label">Action</div>
@@ -196,7 +197,12 @@
           document.getElementById("qqq").textContent = money.format(data.qqq);
           document.getElementById("tqqq").textContent = money.format(data.tqqq);
           document.getElementById("scenario").textContent = `Scenario: ${data.scenario}`;
+          document.getElementById("change").innerText = "Change: " + data.change;
           document.getElementById("action").textContent = data.action;
+
+          if (data.change === "SCENARIO_CHANGED") {
+            document.getElementById("scenario").style.color = "#f59e0b";
+          }
 
           const timestamp = new Date(data.timestamp);
           document.getElementById("timestamp").textContent = Number.isNaN(timestamp.getTime())
@@ -204,6 +210,7 @@
             : `Updated: ${timestamp.toLocaleString()}`;
         } catch (error) {
           document.getElementById("scenario").textContent = "Unable to load scenario";
+          document.getElementById("change").innerText = "Change: unavailable";
           document.getElementById("action").textContent = "Data unavailable";
           setError(error.message);
         }
