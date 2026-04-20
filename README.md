@@ -7,6 +7,8 @@ Minimal production-ready Python project for a daily trading regime dashboard pow
 - Fetches latest daily close prices for `QQQ` and `TQQQ`
 - Classifies the market regime from the `QQQ` price
 - Produces structured JSON output from `job.py`
+- Tracks manually-entered stock and option positions from `state.json`
+- Computes aggregate portfolio P&L for all `OPEN` positions
 - Displays prices, scenario, action, and notes in a Streamlit dashboard
 - Includes Railway config for both the web dashboard and a scheduled daily job
 
@@ -20,6 +22,7 @@ Minimal production-ready Python project for a daily trading regime dashboard pow
 ├── railway.json
 ├── README.md
 ├── requirements.txt
+├── state.json
 └── trading_logic.py
 ```
 
@@ -45,6 +48,46 @@ Start the dashboard:
 streamlit run app.py
 ```
 
+## Trade Entry
+
+`state.json` is the source of truth for manually-entered trades. `job.py` never overwrites your positions; it only reads them and writes calculated output to `data.json`.
+
+Example stock position:
+
+```json
+{
+  "id": "tqqq-shares-2026-04-20",
+  "symbol": "TQQQ",
+  "type": "stock",
+  "status": "OPEN",
+  "side": "LONG",
+  "quantity": 100,
+  "entry_price": 58.25,
+  "entry_date": "2026-04-20"
+}
+```
+
+Example option position:
+
+```json
+{
+  "id": "tqqq-70c-2026-05-15-short",
+  "symbol": "TQQQ",
+  "type": "option",
+  "status": "OPEN",
+  "side": "SHORT",
+  "option_type": "call",
+  "strike": 70,
+  "expiration": "2026-05-15",
+  "contracts": 2,
+  "entry_price": 1.35,
+  "entry_date": "2026-04-20",
+  "multiplier": 100
+}
+```
+
+Use `status: "NOT_DEPLOYED"` to stage a planned trade without including it in live P&L.
+
 ## JSON Output
 
 `job.py` prints JSON like:
@@ -54,15 +97,19 @@ streamlit run app.py
   "qqq": 701.25,
   "tqqq": 94.11,
   "scenario": "Strong Bull",
-  "action": "Add aggressively to TQQQ",
-  "timestamp": "2026-04-19T16:00:00+00:00"
+  "action": "Sell TQQQ spreads, roll short calls higher",
+  "change": "NO_CHANGE",
+  "portfolio_value": 10245.5,
+  "pnl": 245.5,
+  "pnl_percent": 2.46,
+  "positions": []
 }
 ```
 
 ## Scenario Rules
 
-- `QQQ > 700`: Strong Bull
-- `680 < QQQ <= 700`: Bull
+- `QQQ >= 700`: Strong Bull
+- `680 <= QQQ < 700`: Bull
 - `630 < QQQ <= 680`: Neutral
 - `600 < QQQ <= 630`: Weak
 - `580 < QQQ <= 600`: Danger
@@ -104,5 +151,5 @@ Railway cron schedules use **UTC**, not local time. If you want the job to alway
 ## Notes
 
 - No API keys or secrets are required.
-- `app.py` reads `latest_decision.json` when present and falls back to a live market fetch if the file does not exist yet.
-- For production, consider attaching persistent storage or an external store if you want the generated JSON file shared reliably across services.
+- `state.json` is committed so trade entries persist across GitHub Actions runs.
+- `job.py` initializes `reference_snapshot` on first run so tracking begins immediately even before trades are deployed.

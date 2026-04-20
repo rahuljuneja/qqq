@@ -103,6 +103,13 @@
         margin: 0 0 28px;
       }
 
+      .tracking {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin: 0 0 28px;
+      }
+
       .action-box {
         margin-bottom: 20px;
         padding: 24px 18px;
@@ -136,6 +143,82 @@
         font-size: 0.95rem;
       }
 
+      .section-title {
+        margin: 0 0 14px;
+        font-size: 1rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .positions {
+        display: grid;
+        gap: 16px;
+        margin-top: 10px;
+        text-align: left;
+      }
+
+      .position-card {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+        background: #fbfdff;
+      }
+
+      .position-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .position-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+
+      .position-badge {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .badge-open {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .badge-pending {
+        background: #e2e8f0;
+        color: #475569;
+      }
+
+      .badge-closed {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .position-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .position-meta-label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 4px;
+      }
+
+      .position-meta-value {
+        font-weight: 600;
+      }
+
       .error {
         color: #b91c1c;
       }
@@ -158,7 +241,9 @@
         }
 
         .metrics,
-        .performance {
+        .performance,
+        .tracking,
+        .position-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -199,9 +284,34 @@
           </div>
         </div>
 
+        <div class="section-title">Tracking State</div>
+        <div class="tracking">
+          <div class="metric">
+            <div class="metric-label">Starting Capital</div>
+            <div class="metric-value" id="starting-capital">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Open Positions</div>
+            <div class="metric-value" id="open-count">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Not Deployed</div>
+            <div class="metric-value" id="pending-count">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Closed Positions</div>
+            <div class="metric-value" id="closed-count">0</div>
+          </div>
+        </div>
+
         <div class="action-box">
           <div class="action-label">Action</div>
           <div class="action-text" id="action">Loading...</div>
+        </div>
+
+        <div class="section-title">Positions</div>
+        <div class="positions" id="positions">
+          <div class="metric">No positions entered yet.</div>
         </div>
 
         <p class="timestamp" id="timestamp">Waiting for data...</p>
@@ -242,6 +352,74 @@
         }
       }
 
+      function formatMoney(value) {
+        return typeof value === "number" ? money.format(value) : "--";
+      }
+
+      function formatPercent(value) {
+        return typeof value === "number" ? `${percent.format(value)}%` : "--";
+      }
+
+      function buildPositionTitle(position) {
+        if (position.type === "option") {
+          const optionSide = position.side || "LONG";
+          const optionType = (position.option_type || "").toUpperCase();
+          return `${position.symbol} ${position.strike ?? ""} ${optionType} ${position.expiration ?? ""} ${optionSide}`.trim();
+        }
+        return `${position.symbol} ${position.side || "LONG"} ${position.quantity ?? ""}`.trim();
+      }
+
+      function renderPositions(positions) {
+        const container = document.getElementById("positions");
+        if (!Array.isArray(positions) || positions.length === 0) {
+          container.innerHTML = '<div class="metric">No positions entered yet.</div>';
+          return;
+        }
+
+        container.innerHTML = positions
+          .map((position) => {
+            const statusClass =
+              position.status === "OPEN"
+                ? "badge-open"
+                : position.status === "CLOSED"
+                  ? "badge-closed"
+                  : "badge-pending";
+            const sizeLabel = position.type === "option" ? "Contracts" : "Quantity";
+            const sizeValue = position.type === "option" ? position.contracts ?? "--" : position.quantity ?? "--";
+            const currentLabel = position.type === "option" ? "Option Price" : "Market Price";
+
+            return `
+              <article class="position-card">
+                <div class="position-head">
+                  <div class="position-title">${buildPositionTitle(position)}</div>
+                  <div class="position-badge ${statusClass}">${position.status}</div>
+                </div>
+                <div class="position-grid">
+                  <div>
+                    <div class="position-meta-label">${sizeLabel}</div>
+                    <div class="position-meta-value">${sizeValue}</div>
+                  </div>
+                  <div>
+                    <div class="position-meta-label">Entry Price</div>
+                    <div class="position-meta-value">${formatMoney(position.entry_price)}</div>
+                  </div>
+                  <div>
+                    <div class="position-meta-label">${currentLabel}</div>
+                    <div class="position-meta-value">${formatMoney(position.current_price)}</div>
+                  </div>
+                  <div>
+                    <div class="position-meta-label">PnL</div>
+                    <div class="position-meta-value ${position.pnl > 0 ? "positive" : position.pnl < 0 ? "negative" : "neutral"}">
+                      ${formatMoney(position.pnl)}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
       async function loadDashboard() {
         try {
           const response = await fetch(`./data.json?t=${Date.now()}`);
@@ -255,6 +433,9 @@
             typeof data.portfolio_value === "number" ? data.portfolio_value : null;
           const pnl = typeof data.pnl === "number" ? data.pnl : null;
           const pnlPercent = typeof data.pnl_percent === "number" ? data.pnl_percent : null;
+          const startingCapital =
+            typeof data.starting_capital === "number" ? data.starting_capital : null;
+          const summary = data.position_summary || {};
           const scenarioEl = document.getElementById("scenario");
           const actionEl = document.getElementById("action");
           const portfolioValueEl = document.getElementById("portfolio-value");
@@ -270,6 +451,11 @@
           portfolioValueEl.textContent = portfolioValue === null ? "--" : money.format(portfolioValue);
           pnlEl.textContent = pnl === null ? "--" : money.format(pnl);
           pnlPercentEl.textContent = pnlPercent === null ? "--" : `${percent.format(pnlPercent)}%`;
+          document.getElementById("starting-capital").textContent = formatMoney(startingCapital);
+          document.getElementById("open-count").textContent = summary.open ?? 0;
+          document.getElementById("pending-count").textContent = summary.not_deployed ?? 0;
+          document.getElementById("closed-count").textContent = summary.closed ?? 0;
+          renderPositions(data.positions);
 
           if (data.scenario === "Strong Bull") {
             scenarioEl.style.color = "#22c55e";
@@ -309,6 +495,11 @@
           document.getElementById("portfolio-value").textContent = "--";
           document.getElementById("pnl").textContent = "--";
           document.getElementById("pnl-percent").textContent = "--";
+          document.getElementById("starting-capital").textContent = "--";
+          document.getElementById("open-count").textContent = "0";
+          document.getElementById("pending-count").textContent = "0";
+          document.getElementById("closed-count").textContent = "0";
+          document.getElementById("positions").innerHTML = '<div class="metric">Unable to load positions.</div>';
           setError(error.message);
         }
       }
