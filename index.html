@@ -225,6 +225,12 @@
         status.classList.add("error");
       }
 
+      function clearStatus() {
+        const status = document.getElementById("status");
+        status.textContent = "";
+        status.classList.remove("error");
+      }
+
       function setPnLColor(element, value) {
         element.classList.remove("positive", "negative", "neutral");
         if (value > 0) {
@@ -244,20 +250,26 @@
           }
 
           const data = await response.json();
+          const change = typeof data.change === "string" ? data.change : "INITIAL";
+          const portfolioValue =
+            typeof data.portfolio_value === "number" ? data.portfolio_value : null;
+          const pnl = typeof data.pnl === "number" ? data.pnl : null;
+          const pnlPercent = typeof data.pnl_percent === "number" ? data.pnl_percent : null;
           const scenarioEl = document.getElementById("scenario");
           const actionEl = document.getElementById("action");
           const portfolioValueEl = document.getElementById("portfolio-value");
           const pnlEl = document.getElementById("pnl");
           const pnlPercentEl = document.getElementById("pnl-percent");
+          clearStatus();
 
           document.getElementById("qqq").textContent = money.format(data.qqq);
           document.getElementById("tqqq").textContent = money.format(data.tqqq);
           scenarioEl.textContent = `Scenario: ${data.scenario}`;
-          document.getElementById("change").innerText = "Change: " + data.change;
+          document.getElementById("change").innerText = "Change: " + change;
           actionEl.textContent = data.action;
-          portfolioValueEl.textContent = money.format(data.portfolio_value);
-          pnlEl.textContent = money.format(data.pnl);
-          pnlPercentEl.textContent = `${percent.format(data.pnl_percent)}%`;
+          portfolioValueEl.textContent = portfolioValue === null ? "--" : money.format(portfolioValue);
+          pnlEl.textContent = pnl === null ? "--" : money.format(pnl);
+          pnlPercentEl.textContent = pnlPercent === null ? "--" : `${percent.format(pnlPercent)}%`;
 
           if (data.scenario === "Strong Bull") {
             scenarioEl.style.color = "#22c55e";
@@ -276,9 +288,15 @@
             actionEl.style.color = "#22c55e";
           }
 
-          setPnLColor(portfolioValueEl, data.pnl);
-          setPnLColor(pnlEl, data.pnl);
-          setPnLColor(pnlPercentEl, data.pnl);
+          if (pnl === null) {
+            setPnLColor(portfolioValueEl, 0);
+            setPnLColor(pnlEl, 0);
+            setPnLColor(pnlPercentEl, 0);
+          } else {
+            setPnLColor(portfolioValueEl, pnl);
+            setPnLColor(pnlEl, pnl);
+            setPnLColor(pnlPercentEl, pnl);
+          }
 
           const timestamp = new Date(data.timestamp);
           document.getElementById("timestamp").textContent = Number.isNaN(timestamp.getTime())
