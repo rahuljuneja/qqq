@@ -1,9 +1,9 @@
 {
-  "qqq": 721.25,
-  "tqqq": 71.04,
+  "qqq": 725.61,
+  "tqqq": 72.36,
   "scenario": "Strong Bull",
   "action": "Sell TQQQ spreads, roll short calls higher",
-  "timestamp": "2026-10-27T20:13:20.018962+00:00",
+  "timestamp": "2026-10-28T20:31:50.951358+00:00",
   "prev_scenario": "Strong Bull",
   "prev_action": "Sell TQQQ spreads, roll short calls higher",
   "change": "NO_CHANGE",
