@@ -1,9 +1,9 @@
 {
-  "qqq": 681.09,
-  "tqqq": 59.46,
+  "qqq": 685.28,
+  "tqqq": 60.55,
   "scenario": "Bull",
   "action": "Prepare to roll calls, optional trim of TQQQ spreads",
-  "timestamp": "2026-11-02T23:12:09.593240+00:00",
+  "timestamp": "2026-11-03T21:14:55.595937+00:00",
   "prev_scenario": "Bull",
   "prev_action": "Prepare to roll calls, optional trim of TQQQ spreads",
   "change": "NO_CHANGE",
